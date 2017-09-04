@@ -25,23 +25,42 @@ class PackageIndexer {
 		$this->db_connection = $db_connection;
 	}
 
-	public  function add_package($package, array $dependencies){
-		// if dependencies are indexed, then check if $name is indexed
-		if($dependency_records = $this->is_indexed($dependencies)) {
-			// if $name is indexed, update dependencies
-			if($package_record = $this->is_indexed([$package])) {
-				$this->add_dependencies($package_record, $dependency_records);
-			// else, index $name
-			} else {
-				$this->add_index($package);
-			}
-		} else {		
-			// else, throw error
+	public  function add_package($package, array $dependencies = []){
+		$dependency_records = $this->is_indexed($dependencies);
+		if(!empty($dependencies) && !$dependency_records){
 			throw new Exception("All dependencies not indexed.");
 		}
+
+		if($package_records = $this->is_indexed[$package]){
+			// clear dependencies
+			$this->clear_dependencies($package_records[0]);
+		}
+
+		$package_record = $this->add_index($package);
+		$this->add_dependencies($package_record, $dependency_records);
+
 	}
 
-	public  function is_indexed(array $packages){
+	public function add_index($name){
+		$name = $this->db_connection->real_escape_string($name);
+		$active = 1;
+		$result = $this->db_connection->query("select * from packages where name = '{$name}' and active = {$active}");
+
+		if($result->num_rows > 0){
+			return $result->fetch_assoc();
+		} else {
+			$result = $this->db_connection->query("insert into packages (name) values ({'$name}')");
+			return $result->fetch_assoc();
+		}
+
+	}
+
+	public function clear_dependencies($package){
+		$package_id = $package['id'];
+		$result = $this->db_connection->query("update package_dependencies set active=0 where package_id = {$package_id}");
+	}
+
+	public  function is_indexed(array $packages=[]){
 		// return true if $packages are indexed
 		foreach($packages as $package){
 			$package = $this->db_connection->real_escape_string($package);
@@ -122,6 +141,7 @@ class PackageIndexer {
 $host = "localhost";
 $user = "ocean-tester";
 $pw = "test";
-$db = "ocean-pi";
+$db = "oceanPi";
 
 $PI = new PackageIndexer(new DB_Connection($host, $user, $pw, $db));
+$PI->add_package("test1");

@@ -1,10 +1,26 @@
 <?php 
 
+class IndexException extends Exception {
+	protected $message = "package not indexed";
+	protected $code = 1001;
+}
+
 class DB_Connection {
 	private $resource;
 
 	public function __construct($host, $user, $pw, $db){
 		$this->resource = mysqli_connect($host, $user, $pw, $db);
+		/* check connection */
+		if (!$this->resource) {
+			echo "Error: Unable to connect to MySQL." . PHP_EOL;
+			echo "Debugging errno: " . mysqli_connect_errno() . PHP_EOL;
+			echo "Debugging error: " . mysqli_connect_error() . PHP_EOL;
+			exit;
+		}
+	}
+
+	public function get_resource(){
+		return $this->resource;
 	}
 
 	public function real_escape_string($string){
@@ -12,7 +28,12 @@ class DB_Connection {
 	}
 
 	public function query($query){
-		return $this->resource->query($query);
+		$result = $this->resource->query($query);
+
+		echo "\n\n";
+		echo $query."\n";
+		echo $this->resource->error;
+		return $result;
 	}
 
 }
@@ -26,18 +47,18 @@ class PackageIndexer {
 	}
 
 	public  function add_package($package, array $dependencies = []){
-		$dependency_records = $this->is_indexed($dependencies);
-		if(!empty($dependencies) && !$dependency_records){
-			throw new Exception("All dependencies not indexed.");
+		$dependency_records = $this->get_indexed_packages($dependencies);
+
+		try{
+			if($package_records = $this->get_indexed_packages([$package])){
+				$this->clear_dependencies($package_records[0]);
+			}
+		} catch (IndexException $e) {
+			// do nothing
 		}
 
-		if($package_records = $this->is_indexed[$package]){
-			// clear dependencies
-			$this->clear_dependencies($package_records[0]);
-		}
-
-		$package_record = $this->add_index($package);
-		$this->add_dependencies($package_record, $dependency_records);
+		$package_id = $this->add_index($package);
+		$this->add_dependencies($package_id, $dependency_records);
 
 	}
 
@@ -47,10 +68,14 @@ class PackageIndexer {
 		$result = $this->db_connection->query("select * from packages where name = '{$name}' and active = {$active}");
 
 		if($result->num_rows > 0){
-			return $result->fetch_assoc();
+			//return $result->fetch_assoc();
+			$row = $result->fetch_assoc();
+			print_r($row);
+			return $row['id'];
 		} else {
-			$result = $this->db_connection->query("insert into packages (name) values ({'$name}')");
-			return $result->fetch_assoc();
+			$result = $this->db_connection->query("insert into packages (name) values ('{$name}')");
+			return mysqli_insert_id($this->db_connection->get_resource());
+			//return $this->db_connection->insert_id;
 		}
 
 	}
@@ -60,21 +85,45 @@ class PackageIndexer {
 		$result = $this->db_connection->query("update package_dependencies set active=0 where package_id = {$package_id}");
 	}
 
-	public  function is_indexed(array $packages=[]){
+	public  function get_indexed_packages(array $packages=[]){
+		$indexed_packages = [];
+
+		foreach($packages as $package){
+			$package = $this->db_connection->real_escape_string($package);
+			$result = $this->db_connection->query("select * from packages where name = '{$package}'");
+
+			if($result->num_rows == 0){
+				throw new IndexException("could not find package ({$package})");
+			} else {
+				$indexed_packages[] = $result->fetch_assoc();
+			}
+		}		
+
+		return $indexed_packages;
+
+/*		if(empty($packages)){
+			return [];
+		}
+
 		// return true if $packages are indexed
 		foreach($packages as $package){
 			$package = $this->db_connection->real_escape_string($package);
 			$result = $this->db_connection->query("select * from packages where name = '{$package}'");
 			if($result->num_rows == 0){
-				return false;
+				return [];
 			}
 		}
 	
-		while($row = $result->fetch_assoc()){
-			$results[] = $row;
-		}
+		if($result->num_rows > 0){
+			while($row = $result->fetch_assoc()){
+				$results[] = $row;
+			}
 
-		return $results;
+			return $results;
+		} else {
+			return [];
+		}
+*/
 	}
 
 	public  function remove($name){
@@ -92,7 +141,7 @@ class PackageIndexer {
 
 	public  function query($name){
 		// if $name is index, return OK
-		if($records = $this->is_indexed[$name]){
+		if($records = $this->get_indexed_packages[$name]){
 			return $records;
 		// else, throw error
 		} else {
@@ -112,19 +161,19 @@ class PackageIndexer {
 		}
 	}
 
-	public  function add_dependencies(array $package_record, array $dependency_records){
+	public  function add_dependencies($package_id, array $dependency_records){
 		// void existing dependencies
-		$this->remove_dependencies($package_record[0]['id']);
+		$this->remove_dependencies($package_id);
 	
 		// add new dependencies for $name package
 		foreach($dependency_records as $record){
-			$result = $this->db_connection->query("insert into package_dependencies (package_id, dependency_id), values({$package_record[0]['id']}, {$record['id']})");
+			$result = $this->db_connection->query("insert into package_dependencies (package_id, dependency_id) values({$package_id}, {$record['id']})");
 		}
 	}
 
 	public function remove_dependencies($package_id){
 		$active = 0;
-		$result = $this->db_connection->query("updated package_dependencies set active={$active} where package_id = {$package_id}");
+		$result = $this->db_connection->query("update package_dependencies set active={$active} where package_id = {$package_id}");
 	}
 
 	public function is_dependency($name){
@@ -145,3 +194,7 @@ $db = "oceanPi";
 
 $PI = new PackageIndexer(new DB_Connection($host, $user, $pw, $db));
 $PI->add_package("test1");
+$PI->add_package("test2");
+$PI->add_package("test3", ["test1"]);
+$PI->add_package("test4", ["test1", "test3"]);
+$PI->add_package("test5", ["test1", "notpresent"]);

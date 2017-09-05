@@ -64,11 +64,12 @@ class PackageIndexer {
 
 	public function add_index($name){
 		$name = $this->db_connection->real_escape_string($name);
-		$active = 1;
-		$result = $this->db_connection->query("select * from packages where name = '{$name}' and active = {$active}");
+		$result = $this->db_connection->query("select * from packages where name = '{$name}'");
 
 		if($result->num_rows > 0){
 			//return $result->fetch_assoc();
+			$active = 1;
+			$this->db_connection->query("update packages set active = {$active} where name = '{$name}'");
 			$row = $result->fetch_assoc();
 			print_r($row);
 			return $row['id'];
@@ -90,10 +91,13 @@ class PackageIndexer {
 
 		foreach($packages as $package){
 			$package = $this->db_connection->real_escape_string($package);
-			$result = $this->db_connection->query("select * from packages where name = '{$package}'");
+			$active = 1;
+			$result = $this->db_connection->query("select * from packages where name = '{$package}' and active = {$active}");
 
 			if($result->num_rows == 0){
-				throw new IndexException("could not find package ({$package})");
+				// todo: resolve this issue
+//				throw new IndexException("could not find package ({$package})");
+				throw new IndexException();
 			} else {
 				$indexed_packages[] = $result->fetch_assoc();
 			}
@@ -101,32 +105,9 @@ class PackageIndexer {
 
 		return $indexed_packages;
 
-/*		if(empty($packages)){
-			return [];
-		}
-
-		// return true if $packages are indexed
-		foreach($packages as $package){
-			$package = $this->db_connection->real_escape_string($package);
-			$result = $this->db_connection->query("select * from packages where name = '{$package}'");
-			if($result->num_rows == 0){
-				return [];
-			}
-		}
-	
-		if($result->num_rows > 0){
-			while($row = $result->fetch_assoc()){
-				$results[] = $row;
-			}
-
-			return $results;
-		} else {
-			return [];
-		}
-*/
 	}
 
-	public  function remove($name){
+	public  function remove_package($name){
 		// if $name is a dependency, throw error
 		if($this->is_dependency($name)){
 			throw new Exception("cannot remove an active dependency");
@@ -136,18 +117,12 @@ class PackageIndexer {
 			$package_id = $record['id'];
 			$result = $this->db_connection->query("update packages set active={$active} where id = {$package_id}");
 		}
-
 	}
 
-	public  function query($name){
+	public  function query_package($name){
 		// if $name is index, return OK
-		if($records = $this->get_indexed_packages[$name]){
-			return $records;
-		// else, throw error
-		} else {
-			throw new Exception("package is not indexed");
-		}
-
+		$records = $this->get_indexed_packages([$name]);
+		return $records;
 	}
 
 	public function get_package_by_name($name){
@@ -179,7 +154,7 @@ class PackageIndexer {
 	public function is_dependency($name){
 		$active = 1;
 		$name = $this->db_connection->real_escape_string($name);
-		$result = $this->db_connection->query("select * from packages p inner join package_dependencies pd on p.id = pd.dependency_id where p.name = {$name} and pd.active = {$active}");
+		$result = $this->db_connection->query("select * from packages p inner join package_dependencies pd on p.id = pd.dependency_id where p.name = '{$name}' and pd.active = {$active}");
 
 		return $result->num_rows;
 	}
@@ -197,4 +172,9 @@ $PI->add_package("test1");
 $PI->add_package("test2");
 $PI->add_package("test3", ["test1"]);
 $PI->add_package("test4", ["test1", "test3"]);
-$PI->add_package("test5", ["test1", "notpresent"]);
+//$PI->add_package("test5", ["test1", "notpresent"]);
+//$PI->remove_package("test2");
+$PI->remove_package("test1");
+//$PI->remove_package("notpresent");
+$PI->query_package("test1");
+$PI->query_package("notpresent");

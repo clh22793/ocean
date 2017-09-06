@@ -38,6 +38,17 @@ print "\n\nBad package: $message\n\n";
 //print_r($dependencies);
 				$response = $PI->add_package($package_name, $dependencies);
 				stream_socket_sendto($conn, $response."\n");
+			} else if($command == "REMOVE"){
+				$response = $PI->remove_package($package_name);
+//print $response."\n";
+//exit;
+				stream_socket_sendto($conn, $response."\n");
+
+			} else if ($command == "QUERY") {
+				$response = $PI->query_package($package_name);
+//print $response."\n";
+//exit;
+				stream_socket_sendto($conn, $response."\n");
 			} else {
 
 				stream_socket_sendto($conn, "OK\n");

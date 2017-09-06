@@ -29,8 +29,8 @@ class DB_Connection {
 
 	public function query($query){
 		$result = $this->resource->query($query);
-
-/*		echo "\n\n";
+/*
+		echo "\n\n";
 		echo $query."\n";
 		echo $this->resource->error;
 */
@@ -49,9 +49,9 @@ class PackageIndexer {
 	}
 
 	public  function add_package($package, array $dependencies = []){
-		try {
-			$dependency_records = $this->get_indexed_packages($dependencies);
-		} catch (IndexException $e) {
+		$dependency_records = $this->get_indexed_packages($dependencies);
+
+		if(count($dependencies) !== count($dependency_records)){
 			return "FAIL";
 		}
 
@@ -96,6 +96,24 @@ class PackageIndexer {
 	public  function get_indexed_packages(array $packages=[]){
 		$indexed_packages = [];
 
+		foreach($packages as &$package){
+			$package = '"' . $this->db_connection->real_escape_string(trim($package)) . '"';
+		}
+
+		
+		if(!empty($packages)){
+			$package_name_list = implode(",", $packages);
+			$active = 1;
+			$result = $this->db_connection->query("select * from packages where name in ({$package_name_list}) and active = {$active}");
+			
+			while($row = $result->fetch_assoc()){
+				$indexed_packages[] = $row;
+			}
+		}
+
+		return $indexed_packages;
+
+/*
 		foreach($packages as $package){
 			$package = $this->db_connection->real_escape_string(trim($package));
 			$active = 1;
@@ -111,6 +129,7 @@ class PackageIndexer {
 		}		
 
 		return $indexed_packages;
+*/
 
 	}
 
@@ -119,19 +138,29 @@ class PackageIndexer {
 
 		// if $name is a dependency, throw error
 		if($this->is_dependency($name)){
-			throw new Exception("cannot remove an active dependency");
+			//throw new Exception("cannot remove an active dependency");
+			return "FAIL";
 		// else, remove $name from index
 		} else if ($record = $this->get_package_by_name($name)){
 			$active = 0;
 			$package_id = $record['id'];
 			$result = $this->db_connection->query("update packages set active={$active} where id = {$package_id}");
 		}
+
+		return "OK";
 	}
 
 	public  function query_package($name){
 		// if $name is index, return OK
 		$records = $this->get_indexed_packages([trim($name)]);
-		return $records;
+
+		if(empty($records)){
+			return "FAIL";
+		} else {
+			return "OK";
+		}
+		
+		//return $records;
 	}
 
 	public function get_package_by_name($name){
@@ -163,9 +192,14 @@ class PackageIndexer {
 	public function is_dependency($name){
 		$active = 1;
 		$name = $this->db_connection->real_escape_string(trim($name));
-		$result = $this->db_connection->query("select * from packages p inner join package_dependencies pd on p.id = pd.dependency_id where p.name = '{$name}' and pd.active = {$active}");
+//		$result = $this->db_connection->query("select * from packages p inner join package_dependencies pd on p.id = pd.dependency_id where p.name = '{$name}' and pd.active = {$active}");
+		$result = $this->db_connection->query("select * from packages p1 inner join package_dependencies pd on p.id = pd.dependency_id inner join packages p2 on p2.id = pd.package_id where p1.name = '{$name}' and pd.active = {$active} and p2.active = {$active}");
 
-		return $result->num_rows;
+		if(isset($result->num_rows)){
+			return $result->num_rows;
+		} else {
+			return false;
+		}
 	}
 	
 }

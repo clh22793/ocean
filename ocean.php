@@ -30,10 +30,12 @@ class DB_Connection {
 	public function query($query){
 		$result = $this->resource->query($query);
 
-		echo "\n\n";
+/*		echo "\n\n";
 		echo $query."\n";
 		echo $this->resource->error;
+*/
 		return $result;
+
 	}
 
 }
@@ -47,7 +49,11 @@ class PackageIndexer {
 	}
 
 	public  function add_package($package, array $dependencies = []){
-		$dependency_records = $this->get_indexed_packages($dependencies);
+		try {
+			$dependency_records = $this->get_indexed_packages($dependencies);
+		} catch (IndexException $e) {
+			return "FAIL";
+		}
 
 		try{
 			if($package_records = $this->get_indexed_packages([$package])){
@@ -60,10 +66,11 @@ class PackageIndexer {
 		$package_id = $this->add_index($package);
 		$this->add_dependencies($package_id, $dependency_records);
 
+		return "OK";
 	}
 
 	public function add_index($name){
-		$name = $this->db_connection->real_escape_string($name);
+		$name = $this->db_connection->real_escape_string(trim($name));
 		$result = $this->db_connection->query("select * from packages where name = '{$name}'");
 
 		if($result->num_rows > 0){
@@ -71,7 +78,7 @@ class PackageIndexer {
 			$active = 1;
 			$this->db_connection->query("update packages set active = {$active} where name = '{$name}'");
 			$row = $result->fetch_assoc();
-			print_r($row);
+		//	print_r($row);
 			return $row['id'];
 		} else {
 			$result = $this->db_connection->query("insert into packages (name) values ('{$name}')");
@@ -90,7 +97,7 @@ class PackageIndexer {
 		$indexed_packages = [];
 
 		foreach($packages as $package){
-			$package = $this->db_connection->real_escape_string($package);
+			$package = $this->db_connection->real_escape_string(trim($package));
 			$active = 1;
 			$result = $this->db_connection->query("select * from packages where name = '{$package}' and active = {$active}");
 
@@ -108,6 +115,8 @@ class PackageIndexer {
 	}
 
 	public  function remove_package($name){
+		$name = trim($name);
+
 		// if $name is a dependency, throw error
 		if($this->is_dependency($name)){
 			throw new Exception("cannot remove an active dependency");
@@ -121,12 +130,12 @@ class PackageIndexer {
 
 	public  function query_package($name){
 		// if $name is index, return OK
-		$records = $this->get_indexed_packages([$name]);
+		$records = $this->get_indexed_packages([trim($name)]);
 		return $records;
 	}
 
 	public function get_package_by_name($name){
-		$name = $this->db_connection->real_escape_string($name);
+		$name = $this->db_connection->real_escape_string(trim($name));
 		$result = $this->db_connection->query("select * from packages where name = '{$name}'");
 
 		if($result->num_rows == 0){
@@ -153,7 +162,7 @@ class PackageIndexer {
 
 	public function is_dependency($name){
 		$active = 1;
-		$name = $this->db_connection->real_escape_string($name);
+		$name = $this->db_connection->real_escape_string(trim($name));
 		$result = $this->db_connection->query("select * from packages p inner join package_dependencies pd on p.id = pd.dependency_id where p.name = '{$name}' and pd.active = {$active}");
 
 		return $result->num_rows;
@@ -167,7 +176,7 @@ $user = "ocean-tester";
 $pw = "test";
 $db = "oceanPi";
 
-$PI = new PackageIndexer(new DB_Connection($host, $user, $pw, $db));
+//$PI = new PackageIndexer(new DB_Connection($host, $user, $pw, $db));
 /*$PI->add_package("test1");
 $PI->add_package("test2");
 $PI->add_package("test3", ["test1"]);

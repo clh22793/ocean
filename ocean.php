@@ -106,6 +106,7 @@ class PackageIndexer {
 			$active = 1;
 			$result = $this->db_connection->query("select * from packages where name in ({$package_name_list}) and active = {$active}");
 			
+//var_dump($result);
 			while($row = $result->fetch_assoc()){
 				$indexed_packages[] = $row;
 			}

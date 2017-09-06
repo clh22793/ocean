@@ -168,7 +168,7 @@ $pw = "test";
 $db = "oceanPi";
 
 $PI = new PackageIndexer(new DB_Connection($host, $user, $pw, $db));
-$PI->add_package("test1");
+/*$PI->add_package("test1");
 $PI->add_package("test2");
 $PI->add_package("test3", ["test1"]);
 $PI->add_package("test4", ["test1", "test3"]);
@@ -178,3 +178,4 @@ $PI->remove_package("test1");
 //$PI->remove_package("notpresent");
 $PI->query_package("test1");
 $PI->query_package("notpresent");
+*/

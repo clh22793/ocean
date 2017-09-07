@@ -47,6 +47,7 @@ class PackageIndexer {
 	public function clear_dependencies($package){
 		$package_id = $package['id'];
 		$result = $this->db_connection->query("update package_dependencies set active=0 where package_id = {$package_id}");
+		return true;
 	}
 
 	public  function get_indexed_packages(array $packages=[]){
@@ -113,20 +114,23 @@ class PackageIndexer {
 		foreach($dependency_records as $record){
 			$result = $this->db_connection->query("insert into package_dependencies (package_id, dependency_id) values({$package_id}, {$record['id']})");
 		}
+
+		return true;
 	}
 
 	public function remove_dependencies($package_id){
 		$active = 0;
 		$result = $this->db_connection->query("update package_dependencies set active={$active} where package_id = {$package_id}");
+		return true;
 	}
 
 	public function is_dependency($name){
 		$active = 1;
 		$name = $this->db_connection->real_escape_string(trim($name));
-		$result = $this->db_connection->query("select * from packages p1 inner join package_dependencies pd on p.id = pd.dependency_id inner join packages p2 on p2.id = pd.package_id where p1.name = '{$name}' and pd.active = {$active} and p2.active = {$active}");
+		$result = $this->db_connection->query("select * from packages p1 inner join package_dependencies pd on p1.id = pd.dependency_id inner join packages p2 on p2.id = pd.package_id where p1.name = '{$name}' and pd.active = {$active} and p2.active = {$active}");
 
-		if(isset($result->num_rows)){
-			return $result->num_rows;
+		if(isset($result->num_rows) && $result->num_rows > 0){
+			return true;
 		} else {
 			return false;
 		}

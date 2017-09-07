@@ -2,79 +2,66 @@
 require_once('db_connection.php');
 require_once('package_indexer.php');
 
-// creating the socket...
-$ipServer = "localhost";
-$portNumber = 8080;
-$max_threads = 1;
+class IndexServer {
 
-$socket = stream_socket_server('tcp://'.$ipServer.':'.$portNumber, $errno, $errstr);
+	const TIMEOUT = 60 * 60;
+	private $socket;
 
-for($i=0; $i < $max_threads; $i++){
-	$pid = pcntl_fork();
-
-	if(!$pid){
-		index_packages($socket);
-	}
-}
-
-
-function validate_command($command){
-	$commands_list = ["INDEX", "REMOVE", "QUERY"];
-	
-	if(!in_array($command, $commands_list)){
-		return false;
+	public function __construct($host, $port){
+		$this->socket = stream_socket_server('tcp://'.$host.':'.$port, $errno, $errstr);
+		if (!$this->socket){
+			echo "$errstr ($errno)<br />\n";
+			exit;
+		}
 	}
 
-	return $command;
-}
+	public function validate_command($command){
+		$commands_list = ["INDEX", "REMOVE", "QUERY"];
+		
+		if(!in_array($command, $commands_list)){
+			return false;
+		}
 
-function validate_package($package){
-	$match = preg_match('/[\s=]/', $package);
-	return !$match;
-}
-
-function get_command($message){
-	preg_match('/^[A-Z]+|/', $message, $matches);
-	return validate_command($matches[0]);
-}
-
-function get_package_name($message){
-	preg_match('/\|[a-zA-Z0-9=\-_\+]+\|/', $message, $matches);
-
-	if(isset($matches[0])){
-		return str_replace("|", "", $matches[0]);
-	} else {
-		return false;
+		return $command;
 	}
-}
 
-function get_dependencies($message){
-	preg_match('/\|[,a-zA-Z0-9=\-_\+]+\n/', $message, $matches);
-	if(!empty($matches)){
-		return str_replace("|", "", explode(",", $matches[0]));
-	} else {
-		return [];
-	}	
+	public function validate_package($package){
+		$match = preg_match('/[\s=]/', $package);
+		return !$match;
+	}
 
-}
+	public function get_command($message){
+		preg_match('/^[A-Z]+|/', $message, $matches);
+		return $this->validate_command($matches[0]);
+	}
 
-function index_packages($socket){
-	$timeout = 60 * 60;
-	$host = "localhost";
-	$user = "ocean-tester";
-	$pw = "test";
-	$db = "oceanPi";
+	public function get_package_name($message){
+		preg_match('/\|[a-zA-Z0-9=\-_\+]+\|/', $message, $matches);
 
-	$PI = new PackageIndexer(new DB_Connection($host, $user, $pw, $db));
-	if (!$socket){
-		echo "$errstr ($errno)<br />\n";
-	} else {
+		if(isset($matches[0])){
+			return str_replace("|", "", $matches[0]);
+		} else {
+			return false;
+		}
+	}
+
+	public function get_dependencies($message){
+		preg_match('/\|[,a-zA-Z0-9=\-_\+]+\n/', $message, $matches);
+		if(!empty($matches)){
+			return str_replace("|", "", explode(",", $matches[0]));
+		} else {
+			return [];
+		}	
+
+	}
+
+	public function index_packages($PI){
 		while(true) {
-			$conn = stream_socket_accept($socket, $timeout);
+			$conn = stream_socket_accept($this->socket, self::TIMEOUT);
 			while($message = fread($conn, 1024)) {
-				$command = get_command($message);
-				$package_name = get_package_name($message);
-				$dependencies = get_dependencies($message);
+				$command = $this->get_command($message);
+				$package_name = $this->get_package_name($message);
+				$dependencies = $this->get_dependencies($message);
 
 				if(!$command){
 					stream_socket_sendto($conn, "ERROR\n");
@@ -103,3 +90,25 @@ function index_packages($socket){
 	}
 
 }
+
+$socket_host = "localhost";
+$socket_port = 8080;
+$socket_max_threads = 10;
+
+$db_host = "localhost";
+$db_user = "ocean-tester";
+$db_pw = "test";
+$db_name = "oceanPi";
+
+$server = new IndexServer($socket_host, $socket_port);
+
+for($i=0; $i < $socket_max_threads; $i++){
+	$pid = pcntl_fork();
+
+	if(!$pid){
+		$server->index_packages(new PackageIndexer(new DB_Connection($db_host, $db_user, $db_pw, $db_name)));
+	}
+}
+
+
+

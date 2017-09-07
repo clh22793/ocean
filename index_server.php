@@ -10,10 +10,19 @@ class IndexServer {
 	private $port;
 	private $max_threads;
 
-	public function __construct($host, $port, $max_threads=100){
-		$this->host = $host;
-		$this->port = $port;
-		$this->max_threads = $max_threads;
+	private $PI;
+
+	//public function __construct($host, $port, $max_threads=100){
+	public function __construct($socket, $pi){
+//		$this->host = $host;
+//		$this->port = $port;
+//		$this->max_threads = $max_threads;
+		$this->socket = $socket;
+		$this->PI = $pi;
+	}
+
+	public function __destruct(){
+		//fclose($this->socket);
 	}
 
 	public function create_socket_server(){
@@ -25,7 +34,7 @@ class IndexServer {
 	}
 
 	public function start($db_host, $db_user, $db_pw, $db_name){
-		$this->create_socket_server();
+//		$this->create_socket_server();
 
 		for($i=0; $i < $this->max_threads; $i++){
 			$pid = pcntl_fork();
@@ -81,38 +90,42 @@ class IndexServer {
 
 	}
 
-	public function index_packages($PI){
-		while(true) {
-			$conn = stream_socket_accept($this->socket, self::TIMEOUT);
-			while($message = fread($conn, 1024)) {
+	public function process_message($message){
+		//while(true) {
+//			$conn = stream_socket_accept($this->socket, self::TIMEOUT);
+//			while($message = fread($conn, 1024)) {
 				$command = $this->get_command($message);
 				$package_name = $this->get_package_name($message);
 				$dependencies = $this->get_dependencies($message);
 
 				if(!$command){
-					stream_socket_sendto($conn, "ERROR\n");
-					continue;
+					$response = "ERROR";
+					//stream_socket_sendto($conn, "ERROR\n");
+					//continue;
 				} else if(!$package_name){
-					stream_socket_sendto($conn, "ERROR\n");
-					continue;
+					$response = "ERROR";
+					//stream_socket_sendto($conn, "ERROR\n");
+					//continue;
 				} else if($command == "INDEX"){
-					$response = $PI->add_package($package_name, $dependencies);
-					stream_socket_sendto($conn, $response."\n");
+					$response = $this->PI->add_package($package_name, $dependencies);
+					//stream_socket_sendto($conn, $response."\n");
 				} else if($command == "REMOVE"){
-					$response = $PI->remove_package($package_name);
-					stream_socket_sendto($conn, $response."\n");
+					$response = $this->PI->remove_package($package_name);
+					//stream_socket_sendto($conn, $response."\n");
 
 				} else if ($command == "QUERY") {
-					$response = $PI->query_package($package_name);
-					stream_socket_sendto($conn, $response."\n");
+					$response = $this->PI->query_package($package_name);
+					//stream_socket_sendto($conn, $response."\n");
 				} else {
-
-					stream_socket_sendto($conn, "OK\n");
+					$response = "OK";
+					
+					//stream_socket_sendto($conn, "OK\n");
 				}
 
-			}
-			fclose($conn);
-		}
+				return $response;
+//			}
+//			fclose($conn);
+		//}
 	}
 
 }

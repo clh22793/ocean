@@ -20,11 +20,6 @@ class IntegrationTest extends TestCase {
 	private $client;
 	private $process_ids = [];
 
-	public function __construct(){
-
-		parent::__construct();
-	}
-
 	public function setUp(){
 		$this->manager = new PackageIndexManager(self::server_host, self::server_port);
 		$this->process_ids = $this->manager->start(self::server_max_threads, self::max_idle_time);

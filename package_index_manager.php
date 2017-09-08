@@ -14,12 +14,16 @@ class PackageIndexManager {
 		$this->config = parse_ini_file("config.ini");
 	}
 
-	public function start($socket_max_threads, $max_idle_time){
+	public function start($socket_max_threads, $max_idle_time, $waitpid=false){
 		$process_ids = [];
 		for($i=0; $i < $socket_max_threads; $i++){
 			$pid = pcntl_fork();
-			if($pid){
-				$process_ids[] = $pid;
+			$process_ids[] = $pid;
+			if($pid && $waitpid){
+				// this is the parent process
+				// wait until the child has finished processing then end the script
+				pcntl_waitpid($pid, $status, WUNTRACED);
+				exit;
 			} else if(!$pid){
 				$start_time = time();
 				$idle_time = 0;

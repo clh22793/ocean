@@ -1,7 +1,6 @@
-create database oceanPi;
+create database IF NOT EXISTS oceanPi;
 
 use oceanPi; 
-
 
 CREATE TABLE `packages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -28,3 +27,6 @@ CREATE TABLE `package_dependencies` (
   KEY `dependency_id` (`dependency_id`),
   KEY `active` (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+#CREATE USER 'ocean-tester'@'localhost' IDENTIFIED BY 'test';
+#GRANT ALL PRIVILEGES ON *.* TO 'ocean-tester'@'localhost';

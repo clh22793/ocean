@@ -2,7 +2,7 @@
 require_once('index_server.php');
 
 class PackageIndexManager {
-	const TIMEOUT = 600;
+	//const TIMEOUT = 600;
 
 	public function __construct($socket_host, $socket_port){
 		$this->socket = stream_socket_server('tcp://'.$socket_host.':'.$socket_port, $errno, $errstr);
@@ -31,7 +31,7 @@ class PackageIndexManager {
 
 //				while($idle_time < $max_idle_time){
 				while(true){
-					$conn = stream_socket_accept($this->socket, self::TIMEOUT);
+					$conn = stream_socket_accept($this->socket);
 					$idle_time = time() - $start_time;
 					while($conn && $message = fread($conn, 1024)) {
 						$response = $server->process_message($message);		

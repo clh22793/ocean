@@ -12,11 +12,7 @@ class IndexServer {
 
 	private $PI;
 
-	//public function __construct($host, $port, $max_threads=100){
 	public function __construct($socket, $pi){
-//		$this->host = $host;
-//		$this->port = $port;
-//		$this->max_threads = $max_threads;
 		$this->socket = $socket;
 		$this->PI = $pi;
 	}
@@ -34,8 +30,6 @@ class IndexServer {
 	}
 
 	public function start($db_host, $db_user, $db_pw, $db_name){
-//		$this->create_socket_server();
-
 		for($i=0; $i < $this->max_threads; $i++){
 			$pid = pcntl_fork();
 
@@ -55,11 +49,6 @@ class IndexServer {
 
 		return $command;
 	}
-
-	/*public function validate_package($package){
-		$match = preg_match('/[\s=]/', $package);
-		return !$match;
-	}*/
 
 	public function get_command($message){
 		preg_match('/^[A-Z]+|/', $message, $matches);

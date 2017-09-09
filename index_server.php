@@ -91,6 +91,7 @@ class IndexServer {
 	}
 
 	public function process_message($message){
+print "message: $message";
 		//while(true) {
 //			$conn = stream_socket_accept($this->socket, self::TIMEOUT);
 //			while($message = fread($conn, 1024)) {

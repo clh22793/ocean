@@ -40,7 +40,7 @@ class IntegrationTest extends TestCase {
 		fclose($this->client);
 	}
 
-	public function testIndexSuccess(){
+	public function testMessages(){
 		fwrite($this->client, "INDEX|testpackage|\n");
 		$result = stream_socket_recvfrom($this->client, 1500);
 		$this->assertEquals("OK\n",$result);

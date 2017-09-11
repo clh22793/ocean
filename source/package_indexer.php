@@ -16,7 +16,7 @@ class PackageIndexer {
 		}
 
 		if($package_records = $this->get_indexed_packages([$package])){
-			$this->clear_dependencies($package_records[0]);
+			$this->remove_dependencies($package_records[0]['id']);
 		}
 
 		$package_id = $this->add_index($package);
@@ -41,6 +41,7 @@ class PackageIndexer {
 
 	}
 
+	//todo: DEPRECATED; remove this function
 	public function clear_dependencies($package){
 		$package_id = $package['id'];
 		$result = $this->db_connection->query("update package_dependencies set active=0 where package_id = {$package_id}");
@@ -103,12 +104,28 @@ class PackageIndexer {
 	}
 
 	public  function add_dependencies($package_id, array $dependency_records){
+		// todo: remove this code
 		// void existing dependencies
-		$this->remove_dependencies($package_id);
+		//$this->remove_dependencies($package_id);
 	
+
+		// get list of active/inactive dependency records to properly handle duplicates
+		$existing_dependency_record_ids = [];
+		$result = $this->db_connection->query("select * from package_dependencies where package_id = {$package_id}");
+		while($row = $result->fetch_assoc()){
+			$existing_dependency_record_ids[] = $row['id'];
+		}
+
+
 		// add new dependencies for $name package
 		foreach($dependency_records as $record){
-			$result = $this->db_connection->query("insert into package_dependencies (package_id, dependency_id) values({$package_id}, {$record['id']})");
+			if(in_array($record['id'], $existing_dependency_record_ids)){
+				$active = 1;
+				$result = $this->db_connection->query("update package dependency set active = {$active} where package_id = {$package_id} and dependency_id = {$record['id']}");
+			} else {
+				$result = $this->db_connection->query("insert into package_dependencies (package_id, dependency_id) values({$package_id}, {$record['id']})");
+			}
+
 		}
 
 		return true;

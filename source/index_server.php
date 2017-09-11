@@ -16,10 +16,6 @@ class IndexServer {
 		$this->PI = $pi;
 	}
 
-	public function __destruct(){
-		//fclose($this->socket);
-	}
-
 	public function create_socket_server(){
 		$this->socket = stream_socket_server('tcp://'.$this->host.':'.$this->port, $errno, $errstr);
 		if (!$this->socket){
@@ -28,6 +24,7 @@ class IndexServer {
 		}
 	}
 
+	//todo: is this used???
 	public function start($db_host, $db_user, $db_pw, $db_name){
 		for($i=0; $i < $this->max_threads; $i++){
 			$pid = pcntl_fork();

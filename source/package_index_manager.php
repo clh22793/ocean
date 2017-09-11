@@ -2,6 +2,8 @@
 require_once('index_server.php');
 
 class PackageIndexManager {
+	const TIMEOUT = 200;
+
 	public function __construct($socket_host, $socket_port){
 		$this->socket = stream_socket_server('tcp://'.$socket_host.':'.$socket_port, $errno, $errstr);
 		if (!$this->socket){
@@ -23,7 +25,7 @@ class PackageIndexManager {
 				$server = new IndexServer($this->socket, new PackageIndexer(new DB_Connection($this->config['db_host'], $this->config['db_user'], $this->config['db_pw'], $this->config['db_name'])));
 
 				while(true){
-					$conn = stream_socket_accept($this->socket);
+					$conn = stream_socket_accept($this->socket, self::TIMEOUT);
 					$idle_time = time() - $start_time;
 					//while($conn && $message = fread($conn, 1024)) {
 					while($conn && $message = stream_socket_recvfrom($conn, 1500)) {

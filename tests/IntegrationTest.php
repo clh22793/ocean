@@ -11,7 +11,7 @@ class IntegrationTest extends TestCase {
 	const db_name = "oceanPi";
 
 	const server_host = "localhost";
-	const server_port = 8080;
+	const server_port = 8081;
 	const server_max_threads = 1;
 	const max_idle_time = 10;
 

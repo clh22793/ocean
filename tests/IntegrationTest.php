@@ -13,7 +13,6 @@ class IntegrationTest extends TestCase {
 	const server_host = "localhost";
 	const server_port = 8081;
 	const server_max_threads = 1;
-	const max_idle_time = 10;
 
 	private $db_connection;
 	private $server;
@@ -22,8 +21,7 @@ class IntegrationTest extends TestCase {
 
 	public function setUp(){
 		$this->manager = new PackageIndexManager(self::server_host, self::server_port);
-		$this->process_ids = $this->manager->start(self::server_max_threads, self::max_idle_time);
-
+		$this->process_ids = $this->manager->start(self::server_max_threads);
 		$this->client = stream_socket_client("tcp://".self::server_host.":".self::server_port, $errno, $errorMessage);
 
 		if ($this->client === false) {

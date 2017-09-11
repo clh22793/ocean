@@ -10,7 +10,8 @@ WORKDIR /
 RUN apt-get update && DEBIAN_FRONTENT=noninteractive apt-get install -y \
     php7.0 \
     php7.0-fpm \
-    php7.0-mysql
+    php7.0-mysql \
+	wget
 
 RUN wget https://phar.phpunit.de/phpunit-6.2.phar
 RUN chmod +x phpunit-6.2.phar

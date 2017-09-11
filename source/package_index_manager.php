@@ -12,7 +12,7 @@ class PackageIndexManager {
 		$this->config = parse_ini_file("config.ini");
 	}
 
-	public function start($socket_max_threads, $max_idle_time, $keep_parent_alive=false){
+	public function start($socket_max_threads, $keep_parent_alive=false){
 		$process_ids = [];
 		for($i=0; $i < $socket_max_threads; $i++){
 			$pid = pcntl_fork();
@@ -25,7 +25,8 @@ class PackageIndexManager {
 				while(true){
 					$conn = stream_socket_accept($this->socket);
 					$idle_time = time() - $start_time;
-					while($conn && $message = fread($conn, 1024)) {
+					//while($conn && $message = fread($conn, 1024)) {
+					while($conn && $message = stream_socket_recvfrom($conn, 1500)) {
 						$response = $server->process_message($message);		
 						stream_socket_sendto($conn, $response."\n");
 						$idle_time = 0;

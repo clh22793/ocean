@@ -30,16 +30,13 @@ class PackageIndexer {
 		$result = $this->db_connection->query("select * from packages where name = '{$name}'");
 
 		if($result->num_rows > 0){
-			//return $result->fetch_assoc();
 			$active = 1;
 			$this->db_connection->query("update packages set active = {$active} where name = '{$name}'");
 			$row = $result->fetch_assoc();
-		//	print_r($row);
 			return $row['id'];
 		} else {
 			$result = $this->db_connection->query("insert into packages (name) values ('{$name}')");
 			return mysqli_insert_id($this->db_connection->get_resource());
-			//return $this->db_connection->insert_id;
 		}
 
 	}
@@ -56,7 +53,6 @@ class PackageIndexer {
 		foreach($packages as &$package){
 			$package = '"' . $this->db_connection->real_escape_string(trim($package)) . '"';
 		}
-
 		
 		if(!empty($packages)){
 			$package_name_list = implode(",", $packages);

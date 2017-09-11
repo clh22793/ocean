@@ -4,7 +4,6 @@ require_once('package_indexer.php');
 
 class IndexServer {
 
-	const TIMEOUT = 60 * 60;
 	private $socket;
 	private $host;
 	private $port;
@@ -80,44 +79,26 @@ class IndexServer {
 	}
 
 	public function process_message($message){
-print "message: $message";
-		//while(true) {
-//			$conn = stream_socket_accept($this->socket, self::TIMEOUT);
-//			while($message = fread($conn, 1024)) {
-				$command = $this->get_command($message);
-				$package_name = $this->get_package_name($message);
-				$dependencies = $this->get_dependencies($message);
+		$command = $this->get_command($message);
+		$package_name = $this->get_package_name($message);
+		$dependencies = $this->get_dependencies($message);
 
-				if(!$command){
-					$response = "ERROR";
-					//stream_socket_sendto($conn, "ERROR\n");
-					//continue;
-				} else if(!$package_name){
-					$response = "ERROR";
-					//stream_socket_sendto($conn, "ERROR\n");
-					//continue;
-				} else if($command == "INDEX"){
-					$response = $this->PI->add_package($package_name, $dependencies);
-					//stream_socket_sendto($conn, $response."\n");
-				} else if($command == "REMOVE"){
-					$response = $this->PI->remove_package($package_name);
-					//stream_socket_sendto($conn, $response."\n");
+		if(!$command){
+			$response = "ERROR";
+		} else if(!$package_name){
+			$response = "ERROR";
+		} else if($command == "INDEX"){
+			$response = $this->PI->add_package($package_name, $dependencies);
+		} else if($command == "REMOVE"){
+			$response = $this->PI->remove_package($package_name);
+		} else if ($command == "QUERY") {
+			$response = $this->PI->query_package($package_name);
+		} else {
+			$response = "OK";
+		}
 
-				} else if ($command == "QUERY") {
-					$response = $this->PI->query_package($package_name);
-					//stream_socket_sendto($conn, $response."\n");
-				} else {
-					$response = "OK";
-					
-					//stream_socket_sendto($conn, "OK\n");
-				}
-
-				return $response;
-//			}
-//			fclose($conn);
-		//}
+		return $response;
 	}
-
 }
 
 

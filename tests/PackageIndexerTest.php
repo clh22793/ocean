@@ -8,7 +8,7 @@ class PackageIndexerTest extends TestCase {
 	const db_host = "localhost";
 	const db_user = "ocean-tester";
 	const db_pw = "test";
-	const db_name = "oceanPi";
+	const db_name = "oceanPiTest";
 
 	private $db_connection;
 

@@ -23,12 +23,10 @@ class PackageIndexManager {
 				$start_time = time();
 				$idle_time = 0;
 				$server = new IndexServer($this->socket, new PackageIndexer(new DB_Connection($this->config['db_host'], $this->config['db_user'], $this->config['db_pw'], $this->config['db_name'])));
-				//$server = new IndexServer($this->socket, new PackageIndexer($this->db_connection));
 
 				while(true){
 					$conn = stream_socket_accept($this->socket, self::TIMEOUT);
 					$idle_time = time() - $start_time;
-					//while($conn && $message = fread($conn, 1024)) {
 					while($conn && $message = stream_socket_recvfrom($conn, 1500)) {
 						$response = $server->process_message($message);		
 						stream_socket_sendto($conn, $response."\n");

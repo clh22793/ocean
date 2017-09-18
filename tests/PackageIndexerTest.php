@@ -14,6 +14,10 @@ class PackageIndexerTest extends TestCase {
 
 	public function __construct(){
 		$this->db_connection = new DB_Connection(self::db_host, self::db_user, self::db_pw, self::db_name);
+
+		// truncate db
+		$this->db_connection->query("truncate packages");
+		$this->db_connection->query("truncate package_dependencies");
 		parent::__construct();
 	}
 

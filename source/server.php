@@ -7,5 +7,5 @@ $socket_port = 8080;
 $socket_max_threads = 100;
 $max_idle_time = 600 * 5;
 
-$man = new PackageIndexManager($config['socket_host'], $config['socket_port']);
+$man = new PackageIndexManager($config);
 $man->start($config['max_threads'], true);

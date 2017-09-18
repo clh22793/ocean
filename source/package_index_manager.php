@@ -4,14 +4,14 @@ require_once('index_server.php');
 class PackageIndexManager {
 	const TIMEOUT = 200;
 
-	public function __construct($socket_host, $socket_port){
-		$this->socket = stream_socket_server('tcp://'.$socket_host.':'.$socket_port, $errno, $errstr);
+	public function __construct($config){
+		$this->config = $config;
+		$this->socket = stream_socket_server('tcp://'.$this->config['socket_host'].':'.$this->config['socket_port'], $errno, $errstr);
 		if (!$this->socket){
 			echo "$errstr ($errno)<br />\n";
 			exit;
 		}
 
-		$this->config = parse_ini_file("config.ini");
 	}
 
 	public function start($socket_max_threads, $keep_parent_alive=false){
@@ -23,6 +23,7 @@ class PackageIndexManager {
 				$start_time = time();
 				$idle_time = 0;
 				$server = new IndexServer($this->socket, new PackageIndexer(new DB_Connection($this->config['db_host'], $this->config['db_user'], $this->config['db_pw'], $this->config['db_name'])));
+				//$server = new IndexServer($this->socket, new PackageIndexer($this->db_connection));
 
 				while(true){
 					$conn = stream_socket_accept($this->socket, self::TIMEOUT);

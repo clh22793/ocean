@@ -8,7 +8,7 @@ class IntegrationTest extends TestCase {
 	const db_host = "localhost";
 	const db_user = "ocean-tester";
 	const db_pw = "test";
-	const db_name = "oceanPi";
+	const db_name = "oceanPiTest";
 
 	const server_host = "localhost";
 	const server_port = 8081;
@@ -20,7 +20,7 @@ class IntegrationTest extends TestCase {
 	private $process_ids = [];
 
 	public function setUp(){
-		$this->manager = new PackageIndexManager(self::server_host, self::server_port);
+		$this->manager = new PackageIndexManager(["server_host" => self::server_host, "server_port" => self::server_port, "db_host" => self::db_host, "db_user" => self::db_user, "db_pw" => self::db_pw, "db_name" => self::db_name]);
 		$this->process_ids = $this->manager->start(self::server_max_threads);
 		$this->client = stream_socket_client("tcp://".self::server_host.":".self::server_port, $errno, $errorMessage);
 
